@@ -1,0 +1,10 @@
+# YAML 1.2
+---
+authors: 
+  -
+    family-names: 
+    given-names: "Rosie Bartlett"
+cff-version: "1.1.0"
+message: "If you use this software, please cite it using these metadata."
+title: "A Heuristic Solution to the Matrix Travelling Salesperson Problem"
+...
