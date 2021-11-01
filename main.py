@@ -11,7 +11,7 @@ def rotate(angle) -> np.ndarray:
 
 def solve(points: np.ndarray):
     """
-    Function to heuristically solves a metric TSP problem
+    Function to heuristically solve a metric TSP problem
 
     :param points: flattened points in the range [-1,1]
     :return:
