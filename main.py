@@ -1,74 +1,61 @@
+import csv
 import sys
 
-import matplotlib.figure
 import matplotlib.pyplot as plt
-from matplotlib.axes import Axes
 import numpy as np
-
-from tsp_generator import *
-from plotting import *
 
 
 def rotate(angle) -> np.ndarray:
     return np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
 
 
-def solve():
-    def cart(a: np.ndarray, b: np.ndarray) -> [float, float]:
-        """
-        Calculate cartesian equivalent of a vector equation
+def solve(points: np.ndarray):
+    """
+    Function to heuristically solves a metric TSP problem
 
-        :param a: point a (x,y)
-        :param b: direction vector b(x,y)
-        :return: [m,c] for y=mx+c
-        """
-        return [(m := b[1] / b[0]), a[1] - m * a[0]]
+    :param points: flattened points in the range [-1,1]
+    :return:
+    """
+    plt.xlim(-1.4, 1.4)
+    plt.ylim(-1.4, 1.4)
+    points = points.reshape((len(points) // 2, 2))
+    # Optional randomisation/shuffling of the original set
+    # np.random.shuffle(points)
 
-    n = 0
-    colours = ["coral", "lime", "teal", "orchid"]
-    with open("tests/8.csv", 'r') as f:
-        for line in f:
-            print("\re", end="")
-            plt.xlim(0, 1.4)
-            plt.ylim(0, 1.4)
-            points: np.ndarray = np.array([float(i) for i in line.split(',')]).reshape((8, 2))
-            # np.random.shuffle(points)
-
-            # elastic band bounding
-            #
-            bounding = np.array([points[np.argmin(points[:, 0])]])
-            if np.equal(points[np.argmin(points[:, 1])], bounding[0]).all():
-                points = np.dot(points, np.array([[0, -1], [1, 0]]))
-                bounding = np.dot(bounding, np.array([[0, -1], [1, 0]]))
-            min_point = bounding[0]
-            points_to_right = points[np.greater(points[:, 0], min_point[0])]
-            bounding = np.append(bounding, [points_to_right[
-                np.argmin(np.divide(*np.flip(np.subtract(points_to_right, min_point), axis=1).transpose()))
+    # elastic band bounding
+    left = np.argmin(points[:, 0])
+    points_above = points[np.greater(points[:, 1], points[left][1])]
+    first = np.argmax(np.divide(*np.flip(np.subtract(points_above, points[left]), axis=1).transpose()))
+    theta = np.arctan(np.divide(*np.flip(np.subtract(points[first], points[left])))) - np.pi / 2
+    points = np.dot(points, rotate(theta))
+    bounding = np.array([left])
+    theta_all = np.array([])
+    rotated = False
+    while left != first:
+        if np.argmin(points[:, 1]) == left:
+            rotated = True
+            points = np.dot(points, np.array([[0, -1], [1, 0]]))
+        left_point = points[left]
+        indexes = np.less(points[:, 1], left_point[1])
+        points_below = points[indexes]
+        bounding = np.append(bounding, [
+            np.where(indexes)[0][
+                np.argmin(np.divide(*np.flip(np.subtract(points_below, left_point), axis=1).transpose()))
             ]], axis=0)
-            theta = np.arctan(np.divide(*np.flip(np.subtract(bounding[-1], min_point))))
-            points = np.dot(points, rotate(theta))
-            bounding = np.dot(bounding, rotate(theta))
-            min_point = bounding[-1]
-            while np.sum(np.square(bounding[0] - min_point)) > 1e-10:
-                if np.less(np.abs(np.max(points[:, 0]) - min_point[0]), 1e-10).all():
-                    points = np.dot(points, np.array([[0, -1], [1, 0]]))
-                    min_point = np.dot(min_point, np.array([[0, -1], [1, 0]]))
-                    bounding = np.dot(bounding, np.array([[0, -1], [1, 0]]))
-                points_to_right = points[np.greater(points[:, 0], min_point[0])]
-                bounding = np.append(bounding, [points_to_right[
-                    np.argmin(np.divide(*np.flip(np.subtract(points_to_right, min_point), axis=1).transpose()))
-                ]], axis=0)
-                theta = np.arctan(np.divide(*np.flip(np.subtract(bounding[-1], min_point))))
-                min_point = bounding[-1]
-                points = np.dot(points, rotate(theta))
-                bounding = np.dot(bounding, rotate(theta))
-                min_point = np.dot(min_point, rotate(theta))
-            plt.plot(*np.append(points, [points[0]], axis=0).transpose(), 'ro--')
-            plt.plot(*bounding.transpose(), 'b-')
-            bounding = bounding[:-1]
+        theta = np.arctan(np.divide(*np.flip(np.subtract(points[bounding[-1]], left_point)))) + np.pi / 2
+        theta_all = np.append(theta_all, [theta]) + (np.pi / 2 if rotated else 0)
+        rotated = False
+        left = bounding[-1]
+        points = np.dot(points, rotate(theta))
+    plt.plot(*np.append(points, [points[0]], axis=0).transpose(), 'ro--')
+    plt.plot(*points[bounding].transpose(), 'b-')
 
-            plt.show()
+    plt.show()
+    sys.exit(0)
 
 
 if __name__ == "__main__":
-    solve()
+    with open("tests/8.csv", "r") as f:
+        read = csv.reader(f)
+        for row in read:
+            solve(np.array([float(i) for i in row]))
