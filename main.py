@@ -30,7 +30,7 @@ def solve(points: np.ndarray):
     points = np.dot(points, rotate(theta))
     bounding = np.array([left])
     theta_all = np.array([])
-    rotated = False
+    rotated = np.array([])
     while left != first:
         if np.argmin(points[:, 1]) == left:
             rotated = True
@@ -42,13 +42,28 @@ def solve(points: np.ndarray):
             np.where(indexes)[0][
                 np.argmin(np.divide(*np.flip(np.subtract(points_below, left_point), axis=1).transpose()))
             ]], axis=0)
-        theta = np.arctan(np.divide(*np.flip(np.subtract(points[bounding[-1]], left_point)))) + np.pi / 2
+        theta = np.arctan(np.divide(*np.flip(points[bounding[-1]] - left_point))) + np.pi / 2
         theta_all = np.append(theta_all, [theta]) + (np.pi / 2 if rotated else 0)
         rotated = False
         left = bounding[-1]
         points = np.dot(points, rotate(theta))
+    bounding = np.roll(bounding, 2)
+    theta_all = np.append([
+        np.arctan(np.divide(*np.flip(points[bounding[1]] - points[bounding[0]]))) + np.pi / 2
+    ], theta_all)
     plt.plot(*np.append(points, [points[0]], axis=0).transpose(), 'ro--')
     plt.plot(*points[bounding].transpose(), 'b-')
+
+    # Compression
+    # Bisector triangle bounding
+    remaining = np.delete(np.arange(len(points)), bounding)
+    bisector = lambda x: (np.pi - x) / 2
+    bounded_indexes = np.array([[]])
+    for i in range(len(bounding)):
+        pole = points[bounding[i]]
+        first_bisector = -bisector(theta_all[i - 1]) / 2
+        second_bisector = bisector(theta_all[i])
+        point_angles = np.arctan(np.divide())
 
     plt.show()
     sys.exit(0)
